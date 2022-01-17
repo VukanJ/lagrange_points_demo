@@ -287,10 +287,10 @@ int main() {
     // simulation.addProbesAround(simulation.lagrangePoints[L4], 0.01, 50, 0.01);
     // simulation.addProbesAround(simulation.lagrangePoints[L5], 0.001, 50, 0.01);
     // simulation.addProbesAround(simulation.lagrangePoints[L2], 0.001, 100, 0.01);
-    simulation.addProbesAround(simulation.lagrangePoints[L2]+vec2(0.0081, 0), 0.0001, 100, 0.01);
+    // simulation.addProbesAround(simulation.lagrangePoints[L2]+vec2(0.0081, 0), 0.0001, 100, 0.01);
     // simulation.addProbesAround(simulation.lagrangePoints[L1], 0.01, 100, 0.01);
     // simulation.addProbesAround(simulation.lagrangePoints[L3], 0.001, 50, 0.01);
-    // simulation.addProbeRing(10000, 0.01);
+    simulation.addProbeRing(10000, 0.01);
 
     sf::Clock clock;
     sf::View view(sf::Vector2f(win_size_2, win_size_2), sf::Vector2f(win_size, win_size));
@@ -317,7 +317,7 @@ int main() {
                         default: break;
                     } break;
                 case sf::Event::MouseWheelMoved:
-                    view.zoom(event.mouseWheel.delta > 0 ? 0.99 : 1.01);
+                    view.zoom(event.mouseWheel.delta > 0 ? 0.97 : 1.03);
                     break;
                 default : break;
             }
