@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <random>
 #include <eigen3/Eigen/Dense>
 #include <SFML/Graphics.hpp>
 
@@ -9,10 +10,10 @@ constexpr float win_size_2 = static_cast<float>(win_size) / 2;
 using vec2 = Eigen::Vector2f;
 
 // Solar system parameters
-constexpr float G = 1.0f;  // Gravitational constant
+constexpr float G = 2.0f;  // Gravitational constant
 constexpr float M_Sun = 1000;
-constexpr float M_Earth = 15;
-constexpr float AU = 0.5;  // Astronomical unit
+constexpr float M_Earth = 20;
+constexpr float AU = 0.7;  // Astronomical unit
 
 struct Body {
     vec2 pos;
@@ -25,6 +26,10 @@ enum LagrangePoint {L1, L2, L3, L4, L5};
 sf::Vector2f GlToPixelCoord(const vec2& v) {
     return sf::Vector2f(v.x() * win_size / 2 + static_cast<float>(win_size) / 2,
                        -v.y() * win_size / 2 + static_cast<float>(win_size) / 2);
+}
+
+sf::Vector2f EigenToSf(const vec2& v) {
+    return sf::Vector2f(v.x(), v.y());
 }
 
 inline vec2 gravitation(Body& A, Body& B) {
@@ -118,7 +123,7 @@ public:
         }
         
         // Update probe positions and velocities
-        for (size_t i = 0; i < probes.size(); ++i) {
+        for (size_t i = 0; i < probepointer; ++i) {
             probes[i].vel += dt * probe_forces[i] / probes[i].mass;   // v = v + F/m * t
             probes[i].pos += dt * probes[i].vel;    // p = p + v * t
         }
@@ -128,7 +133,7 @@ public:
         setLagrangePoint<L3>(bodies[0], bodies[1]);
         setLagrangePoint<L4>(bodies[0], bodies[1]);
         setLagrangePoint<L5>(bodies[0], bodies[1]);
-        /// bodies[0].pos = vec2(0, 0);
+        // bodies[0].pos = vec2(0, 0);
     }
 
     void addBody(const vec2& pos, const vec2& vel, float mass, sf::Color color=sf::Color::White) {
@@ -150,6 +155,8 @@ public:
         // probes_draw.back().setPosition(GlToPixelCoord(probes.back().pos));
 
         probe_forces.emplace_back(0, 0);
+        probecount++;
+        probepointer++;
     }
 
     void addProbes(int N, float mass) {
@@ -188,6 +195,28 @@ public:
         }
     }
 
+    void addProbeRing(int N, float mass) {
+        // Placing N x N probe bodies into the solar system into an orbit around the sun
+        std::mt19937 mt_rand(time(0));
+        std::uniform_real_distribution<float> phi_dist(0, 2 * M_PI);
+        std::uniform_real_distribution<float> r_dist(0.99 * AU, 1.01 * AU);
+
+        for (int i = 0; i < N; ++i) {
+            float r   = r_dist(mt_rand);
+            float phi = phi_dist(mt_rand);
+            
+            float x = r * cos(phi);
+            float y = r * sin(phi);
+
+
+            float earth_omega = std::sqrt(G * bodies[0].mass / std::pow(AU, 3));
+            vec2 pos = vec2(x, y) + bodies[0].pos;
+            vec2 orb_vel = vec2(-pos.y(), pos.x()).normalized();
+            orb_vel *= earth_omega * pos.norm();
+            addProbe(pos, orb_vel, mass);
+        }
+    }
+
     void render(sf::RenderWindow& window) {
         // Update sphere positions
         
@@ -202,7 +231,7 @@ public:
         
         // Draw mass probes
         probes_draw_VA.clear();
-        for (std::size_t i = 0; i < probes.size(); ++i) {
+        for (std::size_t i = 0; i < probepointer; ++i) {
             probes_draw_VA.append(sf::Vertex(GlToPixelCoord(probes[i].pos), sf::Color(255, 255, 255, 150)));
         }
         for (const auto& body : bodies_draw) {
@@ -217,6 +246,20 @@ public:
         }
     }
 
+    void deleteBodies() {
+        for (std::size_t p = 0; p < probepointer; ++p) {
+            vec2 pos = probes[p].pos - bodies[0].pos;
+            if (pos.squaredNorm() < std::pow(0.05, 2) || pos.squaredNorm() > std::pow(2, 2)) {
+                std::swap(probes[p], probes[probepointer--]);
+            }
+        }
+    }
+
+    float getEarthSunAngle() {
+        vec2 temp (bodies[1].pos - bodies[0].pos);
+        return atan2(temp.y(), temp.x());
+    }
+
     std::vector<Body> bodies;
     std::vector<Body> probes;
 
@@ -226,6 +269,8 @@ private:
     std::vector<vec2> probe_forces;
     std::vector<sf::CircleShape> bodies_draw;
     std::vector<sf::CircleShape> probes_draw;
+    std::size_t probecount = 0;
+    std::size_t probepointer = -1;
 
     sf::CircleShape orbit_earth_draw;
     std::array<sf::CircleShape, 5> lagrangePoints_draw;
@@ -239,14 +284,21 @@ int main() {
     window.setFramerateLimit(60);
 
     Simulation simulation;
-    simulation.addProbesAround(simulation.lagrangePoints[L4], 0.05, 50, 0.01);
-    simulation.addProbesAround(simulation.lagrangePoints[L5], 0.05, 50, 0.01);
-    simulation.addProbesAround(simulation.lagrangePoints[L2], 0.01, 50, 0.01);
+    // simulation.addProbesAround(simulation.lagrangePoints[L4], 0.01, 50, 0.01);
+    // simulation.addProbesAround(simulation.lagrangePoints[L5], 0.001, 50, 0.01);
+    // simulation.addProbesAround(simulation.lagrangePoints[L2], 0.001, 100, 0.01);
+    simulation.addProbesAround(simulation.lagrangePoints[L2]+vec2(0.0081, 0), 0.0001, 100, 0.01);
+    // simulation.addProbesAround(simulation.lagrangePoints[L1], 0.01, 100, 0.01);
+    // simulation.addProbesAround(simulation.lagrangePoints[L3], 0.001, 50, 0.01);
+    // simulation.addProbeRing(10000, 0.01);
 
     sf::Clock clock;
     sf::View view(sf::Vector2f(win_size_2, win_size_2), sf::Vector2f(win_size, win_size));
 
     bool delete_bodies = false;
+    bool earth_frame = true;
+
+    vec2 view_center = vec2(0, 0);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -257,8 +309,16 @@ int main() {
                     switch (event.key.code) {
                         case sf::Keyboard::Escape:window.close(); break;
                         case sf::Keyboard::D: delete_bodies = true; break;
+                        case sf::Keyboard::R: earth_frame = !earth_frame; break;
+                        case sf::Keyboard::Right: view_center += vec2(10, 0); break;
+                        case sf::Keyboard::Left: view_center += vec2(-10, 0); break;
+                        case sf::Keyboard::Up: view_center += vec2(0, -10); break;
+                        case sf::Keyboard::Down: view_center += vec2(0, 10); break;
                         default: break;
                     } break;
+                case sf::Event::MouseWheelMoved:
+                    view.zoom(event.mouseWheel.delta > 0 ? 0.99 : 1.01);
+                    break;
                 default : break;
             }
         }
@@ -269,8 +329,17 @@ int main() {
         // rotate view with earth:
         vec2 r12 = (simulation.bodies[1].pos - simulation.bodies[0].pos).normalized();
         float ang = std::atan2(r12.y(), r12.x());
-        view.setRotation(-ang * 180.0 / M_PI);
+
+
+        if (earth_frame) {
+            view.setRotation(-ang * 180.0 / M_PI);
+        }
+        view.move(EigenToSf(Eigen::Rotation2D(-simulation.getEarthSunAngle()) * view_center));
         window.setView(view);
+
+        if (delete_bodies) {
+            simulation.deleteBodies();
+        }
 
         simulation.step(0.0001);
         simulation.render(window);
