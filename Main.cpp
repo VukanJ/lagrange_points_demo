@@ -4,7 +4,7 @@
 #include <eigen3/Eigen/Dense>
 #include <SFML/Graphics.hpp>
 
-constexpr int win_size = 1000;
+constexpr int win_size = 1200;
 constexpr float win_size_2 = static_cast<float>(win_size) / 2;
 
 using vec2 = Eigen::Vector2f;
@@ -151,27 +151,17 @@ public:
 
     void addProbe(const vec2& pos, const vec2& vel, float mass) {
         probes.emplace_back(pos, vel, mass);
-        // probes_draw.emplace_back(sf::CircleShape(1));
-        // probes_draw.back().setPosition(GlToPixelCoord(probes.back().pos));
-
         probe_forces.emplace_back(0, 0);
         probecount++;
         probepointer++;
     }
 
-    void addProbes(int N, float mass) {
-        // Placing N x N probe bodies into the solar system into an orbit around the sun
-        constexpr float min = -0.9;
-        constexpr float max =  0.9001;
-        for (float x = min; x < max; x += (max - min) / N) {
-            for (float y = min; y < max; y += (max - min) / N) {
-                vec2 pos(x, y);
-                vec2 orb_vel = vec2(-y, x).normalized();
-                orb_vel *= std::sqrt(G * M_Sun / pos.norm());
-
-                addProbe(pos, orb_vel, mass);
-            }
-        }
+    void addProbeIntoEarthOrbit(vec2 at, float mass) {
+        vec2 sunpos = bodies[0].pos;
+        float earth_omega = std::sqrt(G * bodies[0].mass / std::pow(AU, 3));
+        vec2 orb_vel = vec2(-(at - sunpos).y(), (at - sunpos).x()).normalized();
+        orb_vel *= earth_omega * (at - sunpos).norm();
+        addProbe(at, orb_vel, mass);
     }
 
     void addProbesAround(vec2 refpos, float width, int N, float mass) {
@@ -180,17 +170,7 @@ public:
         const float max =  0.9001 * width;
         for (float x = min; x < max; x += (max - min) / N) {
             for (float y = min; y < max; y += (max - min) / N) {
-                // vec2 pos = vec2(x, y) + refpos;
-                // vec2 orb_vel = vec2(-refpos.y(), refpos.x()).normalized();
-                // orb_vel *= std::sqrt(G * M_Sun / refpos.norm());
-
-                // addProbe(pos, orb_vel, mass);
-
-                float earth_omega = std::sqrt(G * bodies[0].mass / std::pow(AU, 3));
-                vec2 pos = vec2(x, y) + refpos;
-                vec2 orb_vel = vec2(-pos.y(), pos.x()).normalized();
-                orb_vel *= earth_omega * pos.norm();
-                addProbe(pos, orb_vel, mass);
+                addProbeIntoEarthOrbit(vec2(x, y) + refpos, mass);
             }
         }
     }
@@ -313,6 +293,8 @@ int main(int argc, char** argv) {
 
     while (window.isOpen()) {
         sf::Event event;
+        sf::Vector2i mouseposition;
+        vec2 mouseposition_transformed;
         while (window.pollEvent(event)) {
             switch (event.type) {
                 case sf::Event::Closed: window.close(); break;
@@ -330,7 +312,17 @@ int main(int argc, char** argv) {
                 case sf::Event::MouseWheelMoved:
                     view.zoom(event.mouseWheel.delta > 0 ? 0.97 : 1.03);
                     break;
-                default : break;
+                case sf::Event::MouseButtonPressed:
+                    mouseposition = sf::Mouse::getPosition(window);
+                    mouseposition_transformed = vec2(mouseposition.x - win_size_2, -(mouseposition.y - win_size_2)) / win_size_2;
+                    if (earth_frame) {
+                        mouseposition_transformed = Eigen::Rotation2D(simulation.getEarthSunAngle()) * mouseposition_transformed;
+                    }
+                    mouseposition_transformed.x() += simulation.bodies[0].pos.x();
+                    mouseposition_transformed.y() += simulation.bodies[0].pos.y();
+                    simulation.addProbesAround(mouseposition_transformed, 0.003, 30, 0.01);
+                    break;
+                default: break;
             }
         }
         window.clear(sf::Color::Black);
