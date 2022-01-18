@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(planets)
+project(lagrange_points_demo)
 
 set(CMAKE_CXX_STANDARD_REQUIRED 17)
 add_compile_options(-std=c++2a -Wall -Wpedantic -Wextra -Wunused-value -Wunused-function -Wshadow)
@@ -14,8 +14,8 @@ set(LIBRARIES Eigen3::Eigen sfml-graphics sfml-window sfml-system)
 file(GLOB SRC "*.cpp")
 
 if (SFML_FOUND)
-    add_executable(planets ${SRC})
-    target_link_libraries(planets PRIVATE ${LIBRARIES})
+    add_executable(lagrange_points_demo ${SRC})
+    target_link_libraries(lagrange_points_demo PRIVATE ${LIBRARIES})
 else ()
     message(FATAL_ERROR "Could not resolve dependencies")
 endif ()

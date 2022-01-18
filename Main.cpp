@@ -123,7 +123,7 @@ public:
         }
         
         // Update probe positions and velocities
-        for (size_t i = 0; i < probepointer; ++i) {
+        for (int i = 0; i < probepointer; ++i) {
             probes[i].vel += dt * probe_forces[i] / probes[i].mass;   // v = v + F/m * t
             probes[i].pos += dt * probes[i].vel;    // p = p + v * t
         }
@@ -231,7 +231,7 @@ public:
         
         // Draw mass probes
         probes_draw_VA.clear();
-        for (std::size_t i = 0; i < probepointer; ++i) {
+        for (int i = 0; i < probepointer; ++i) {
             probes_draw_VA.append(sf::Vertex(GlToPixelCoord(probes[i].pos), sf::Color(255, 255, 255, 150)));
         }
         for (const auto& body : bodies_draw) {
@@ -247,7 +247,7 @@ public:
     }
 
     void deleteBodies() {
-        for (std::size_t p = 0; p < probepointer; ++p) {
+        for (int p = 0; p < probepointer; ++p) {
             vec2 pos = probes[p].pos - bodies[0].pos;
             if (pos.squaredNorm() < std::pow(0.05, 2) || pos.squaredNorm() > std::pow(2, 2)) {
                 std::swap(probes[p], probes[probepointer--]);
@@ -270,7 +270,7 @@ private:
     std::vector<sf::CircleShape> bodies_draw;
     std::vector<sf::CircleShape> probes_draw;
     std::size_t probecount = 0;
-    std::size_t probepointer = -1;
+    int probepointer = -1;
 
     sf::CircleShape orbit_earth_draw;
     std::array<sf::CircleShape, 5> lagrangePoints_draw;
@@ -278,19 +278,30 @@ private:
 };
 
 
-int main() {
+int main(int argc, char** argv) {
     sf::ContextSettings context_settings(0, 0, 3, 2, 0);
     sf::RenderWindow window(sf::VideoMode(win_size, win_size), "LagrangePoints");
     window.setFramerateLimit(60);
 
     Simulation simulation;
-    // simulation.addProbesAround(simulation.lagrangePoints[L4], 0.01, 50, 0.01);
-    // simulation.addProbesAround(simulation.lagrangePoints[L5], 0.001, 50, 0.01);
-    // simulation.addProbesAround(simulation.lagrangePoints[L2], 0.001, 100, 0.01);
-    // simulation.addProbesAround(simulation.lagrangePoints[L2]+vec2(0.0081, 0), 0.0001, 100, 0.01);
-    // simulation.addProbesAround(simulation.lagrangePoints[L1], 0.01, 100, 0.01);
-    // simulation.addProbesAround(simulation.lagrangePoints[L3], 0.001, 50, 0.01);
-    simulation.addProbeRing(10000, 0.01);
+    
+    if (argc == 2) {
+        for (int arg = 1; arg < argc; ++arg) {
+            if (argv[arg][0] == 'L') {
+                switch (argv[arg][1] - '0') {
+                    case 1: simulation.addProbesAround(simulation.lagrangePoints[L1] + vec2(0.008, 0), 0.002, 100, 0.01); break;
+                    case 2: simulation.addProbesAround(simulation.lagrangePoints[L2] + vec2(0.0081, 0), 0.001, 100, 0.01); break;
+                    case 3: simulation.addProbesAround(simulation.lagrangePoints[L3], 0.001, 50, 0.01); break;
+                    case 4: simulation.addProbesAround(simulation.lagrangePoints[L4], 0.003, 50, 0.01); break;
+                    case 5: simulation.addProbesAround(simulation.lagrangePoints[L5], 0.003, 50, 0.01); break;
+                    default: throw std::runtime_error("Unknown lagrange point");
+                }
+            }
+            else if (argv[arg][0] == 'R') {
+                simulation.addProbeRing(10000, 0.01);
+            }
+        }
+    }
 
     sf::Clock clock;
     sf::View view(sf::Vector2f(win_size_2, win_size_2), sf::Vector2f(win_size, win_size));
