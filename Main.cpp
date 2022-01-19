@@ -8,6 +8,7 @@ constexpr int win_size = 1200;
 constexpr float win_size_2 = static_cast<float>(win_size) / 2;
 
 using vec2 = Eigen::Vector2f;
+enum LagrangePoint {L1, L2, L3, L4, L5};
 
 // Solar system parameters
 constexpr float G = 2.0f;  // Gravitational constant
@@ -20,8 +21,6 @@ struct Body {
     vec2 vel;
     float mass;
 };
-
-enum LagrangePoint {L1, L2, L3, L4, L5};
 
 sf::Vector2f GlToPixelCoord(const vec2& v) {
     return sf::Vector2f(v.x() * win_size / 2 + static_cast<float>(win_size) / 2,
@@ -68,13 +67,15 @@ public:
             lp.setOutlineColor(sf::Color::Red);
             lp.setOutlineThickness(1);
         }
-        setLagrangePoint<L1>(bodies[0], bodies[1]);
-        setLagrangePoint<L2>(bodies[0], bodies[1]);
-        setLagrangePoint<L3>(bodies[0], bodies[1]);
-        setLagrangePoint<L4>(bodies[0], bodies[1]);
-        setLagrangePoint<L5>(bodies[0], bodies[1]);
+        setLagrangePoint<L1>();
+        setLagrangePoint<L2>();
+        setLagrangePoint<L3>();
+        setLagrangePoint<L4>();
+        setLagrangePoint<L5>();
     }
-    template <LagrangePoint L> void setLagrangePoint(const Body& sun, const Body& earth) {
+    template <LagrangePoint L> void setLagrangePoint() {
+        const auto& sun = bodies[0];
+        const auto& earth = bodies[1];
         vec2 r = earth.pos - sun.pos;
         if constexpr (L == LagrangePoint::L1) { 
             lagrangePoints[L] = sun.pos + r.norm() * (1.0 - std::pow(earth.mass / (3 * (sun.mass + earth.mass)), 0.33333333)) * r.normalized();
@@ -128,11 +129,11 @@ public:
             probes[i].pos += dt * probes[i].vel;    // p = p + v * t
         }
         // Update lagrange point positions
-        setLagrangePoint<L1>(bodies[0], bodies[1]);
-        setLagrangePoint<L2>(bodies[0], bodies[1]);
-        setLagrangePoint<L3>(bodies[0], bodies[1]);
-        setLagrangePoint<L4>(bodies[0], bodies[1]);
-        setLagrangePoint<L5>(bodies[0], bodies[1]);
+        setLagrangePoint<L1>();
+        setLagrangePoint<L2>();
+        setLagrangePoint<L3>();
+        setLagrangePoint<L4>();
+        setLagrangePoint<L5>();
         // bodies[0].pos = vec2(0, 0);
     }
 
@@ -201,6 +202,9 @@ public:
         // Update sphere positions
         
         // Draw Earths orbit
+        float R = (bodies[1].pos - bodies[0].pos).norm() * win_size_2;
+        orbit_earth_draw.setRadius(R);
+        orbit_earth_draw.setOrigin(R, R);
         orbit_earth_draw.setPosition(GlToPixelCoord(bodies[0].pos));
         window.draw(orbit_earth_draw);
 
