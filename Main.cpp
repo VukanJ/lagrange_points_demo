@@ -88,9 +88,8 @@ public:
         }
         if constexpr (L == LagrangePoint::L4 || L == LagrangePoint::L5) {
             auto sign = L == LagrangePoint::L4 ? 1 : -1;
-            constexpr float L45ang = 2.0 * M_PI / 6.0;
-            r = vec2(r.x()*cos(L45ang) + sign*r.y()*sin(L45ang), -sign*r.x()*sin(L45ang) + r.y()*cos(L45ang));
-            lagrangePoints[L] = r + sun.pos;
+            float r1 = abs(r.norm() * earth.mass / (earth.mass + sun.mass));
+            lagrangePoints[L] = (sun.pos - r1 * r.normalized()) + Eigen::Rotation2D<float>(sign * 2.0 * M_PI / 6.0 + getEarthSunAngle()) * vec2(r.norm(), 0);
         }
     }
 
