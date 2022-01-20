@@ -78,10 +78,10 @@ public:
         const auto& earth = bodies[1];
         vec2 r = earth.pos - sun.pos;
         if constexpr (L == LagrangePoint::L1) { 
-            lagrangePoints[L] = sun.pos + r.norm() * (1.0 - std::pow(earth.mass / (3 * (sun.mass + earth.mass)), 0.33333333)) * r.normalized();
+            lagrangePoints[L] = sun.pos + r.norm() * (1.0 - std::cbrt(earth.mass / (3 * (sun.mass + earth.mass)))) * r.normalized();
         }
         if constexpr (L == LagrangePoint::L2) {
-            lagrangePoints[L] = sun.pos + r.norm() * (1.0 + std::pow(earth.mass / (3 * (sun.mass + earth.mass)), 0.33333333)) * r.normalized();
+            lagrangePoints[L] = sun.pos + r.norm() * (1.0 + std::cbrt(earth.mass / (3 * (sun.mass + earth.mass)))) * r.normalized();
         }
         if constexpr (L == LagrangePoint::L3) { 
             lagrangePoints[L] = sun.pos - r.norm() * (1.0 + 5.0/12.0 * (earth.mass / (earth.mass + sun.mass))) * r.normalized();
@@ -139,7 +139,7 @@ public:
     void addBody(const vec2& pos, const vec2& vel, float mass, sf::Color color=sf::Color::White) {
         constexpr float body_density = 0.1;
         // Calculate radius assuming body is spherical
-        float body_radius = std::pow(3.0 * mass / (4.0 * M_PI * body_density), 0.3333333);
+        float body_radius = std::cbrt(3.0 * mass / (4.0 * M_PI * body_density));
 
         bodies.emplace_back(pos, vel, mass);
         bodies_draw.emplace_back(sf::CircleShape(body_radius));
