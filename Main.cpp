@@ -31,7 +31,7 @@ sf::Vector2f EigenToSf(const vec2& v) {
     return sf::Vector2f(v.x(), v.y());
 }
 
-inline vec2 gravitation(Body& A, Body& B) {
+inline vec2 gravity(Body& A, Body& B) {
     // Return gravitational force acting on body A
     return G * A.mass * B.mass * (B.pos - A.pos) / (std::pow((B.pos - A.pos).norm(), 3));
 }
@@ -101,7 +101,7 @@ public:
         // Compute gravitational attraction (2 - body problem)
         for (size_t i = 0; i < bodies.size(); ++i) {
             for (size_t j = i + 1; j < bodies.size(); ++j) {
-                auto Fg = gravitation(bodies[i], bodies[j]);
+                auto Fg = gravity(bodies[i], bodies[j]);
                 // Newton 3
                 body_forces[i] += Fg;
                 body_forces[j] -= Fg;
@@ -110,7 +110,7 @@ public:
         
         // Forces acting on probes
         for (size_t i = 0; i < probes.size(); ++i) {
-            auto Fg = gravitation(probes[i], bodies[0]) + gravitation(probes[i], bodies[1]);
+            auto Fg = gravity(probes[i], bodies[0]) + gravity(probes[i], bodies[1]);
             probe_forces[i] += Fg;
         }
     }
@@ -156,7 +156,7 @@ public:
         probepointer++;
     }
 
-    void addProbeIntoEarthOrbit(vec2 at, float mass) {
+    void addProbeOntoEarthOrbit(vec2 at, float mass) {
         vec2 sunpos = bodies[0].pos;
         float earth_omega = std::sqrt(G * bodies[0].mass / std::pow(AU, 3));
         vec2 orb_vel = vec2(-(at - sunpos).y(), (at - sunpos).x()).normalized();
@@ -170,7 +170,7 @@ public:
         const float max =  0.9001 * width;
         for (float x = min; x < max; x += (max - min) / N) {
             for (float y = min; y < max; y += (max - min) / N) {
-                addProbeIntoEarthOrbit(vec2(x, y) + refpos, mass);
+                addProbeOntoEarthOrbit(vec2(x, y) + refpos, mass);
             }
         }
     }
@@ -262,8 +262,8 @@ private:
 
 
 int main(int argc, char** argv) {
-    sf::ContextSettings context_settings(0, 0, 3, 2, 0);
-    sf::RenderWindow window(sf::VideoMode(win_size, win_size), "LagrangePoints");
+    sf::ContextSettings context_settings(0, 0, 0, 2, 0);
+    sf::RenderWindow window(sf::VideoMode(win_size, win_size), "LagrangePoints", sf::Style::Default, context_settings);
     window.setFramerateLimit(60);
 
     Simulation simulation;
